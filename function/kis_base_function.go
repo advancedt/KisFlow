@@ -22,6 +22,8 @@ type BaseFunction struct {
 	//flow
 	Flow kis.Flow //上下文环境KisFlow
 
+	connector kis.Connector //connector
+
 	//link
 	N kis.Function //下一个流计算Function
 	P kis.Function //上一个流计算Function
@@ -97,6 +99,18 @@ func (base *BaseFunction) GetFlow() kis.Flow {
 
 func (base *BaseFunction) CreateId() {
 	base.Id = id.KisID(common.KisIdTypeFunction)
+}
+
+func (base *BaseFunction) AddConnector(conn kis.Connector) error {
+	if conn == nil {
+		return errors.New("conn is nil")
+	}
+	base.connector = conn
+	return nil
+}
+
+func (base *BaseFunction) GetConnector() kis.Connector {
+	return base.connector
 }
 
 // NewKisFunction 创建一个NsFunction

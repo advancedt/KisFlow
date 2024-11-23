@@ -15,4 +15,16 @@ type Flow interface {
 	CommitRow(row interface{}) error
 	// Input 得到flow当前执行Function的输入源数据
 	Input() common.KisRowArr
+
+	// 得到Flow名称
+	GetName() string
+
+	// GetThisFunction得到当前正在执行的Function
+	GetThisFunction() Function
+	// GetThisFunctionConf 得到当前正在执行的Function的配置
+	GetThisFuncConf() *config.KisFuncConfig
+
+	GetConnector() (Connector, error)
+	// GetConnConf 得到当前正在执行的Function的Connector的配置
+	GetConnConf() (*config.KisConnConfig, error)
 }

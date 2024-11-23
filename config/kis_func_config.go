@@ -3,6 +3,7 @@ package config
 import (
 	"KisFlow/common"
 	"KisFlow/log"
+	"errors"
 )
 
 // 在大部分全部Flow中Function定制固定配置参数类型
@@ -28,6 +29,8 @@ type KisFuncConfig struct {
 	FMode   string        `yaml:"fmode"`
 	Source  KisSource     `yaml:"source"`
 	Option  KisFuncOption `yaml:"option"`
+
+	connConf *KisConnConfig
 }
 
 // NewFuncConfig 创建一个Function策略配置对象，用于描述一个KisFunction信息
@@ -61,4 +64,24 @@ func NewFuncConfig(funcName string, mode common.KisMode, source *KisSource, opti
 	}
 
 	return config
+}
+
+func (fConf *KisFuncConfig) AddConnConfig(cConf *KisConnConfig) error {
+	if cConf == nil {
+		return errors.New("KisConnConfig is nil")
+	}
+
+	// Function要和Connector进行关联
+	fConf.connConf = cConf
+
+	// Connector要和Function进行关联
+	_ = cConf.WithFunc(fConf)
+	return nil
+}
+
+func (fConf *KisFuncConfig) GetConnConfig() (*KisConnConfig, error) {
+	if fConf.connConf == nil {
+		return nil, errors.New("KisFuncConfig.connConf not set")
+	}
+	return fConf.connConf, nil
 }

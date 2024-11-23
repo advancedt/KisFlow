@@ -2,6 +2,7 @@ package function
 
 import (
 	"KisFlow/kis"
+	"KisFlow/log"
 	"context"
 	"fmt"
 )
@@ -13,7 +14,11 @@ type KisFunctionV struct {
 func (f *KisFunctionV) Call(ctx context.Context, flow kis.Flow) error {
 	fmt.Printf("KisFunctionV, flow = %+v\n", flow)
 
-	// TODO 调用具体的Function执行方法
+	// 通过KisPool 路由到具体的执行计算Funtion
+	if err := kis.Pool().CallFunction(ctx, f.Config.FName, flow); err != nil {
+		log.Logger().ErrorFX(ctx, "Function Called Error err = %s\n", err)
+		return err
+	}
 
 	return nil
 }
