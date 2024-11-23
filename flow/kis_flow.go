@@ -21,7 +21,7 @@ type KisFlow struct {
 	// FLow配置策略
 	Conf *config.KisFlowConfig
 	//Function 列表
-	Funcs          map[string]kis.Function // 当前flow拥有的全部管理的全部Function对象, key: FunctionID
+	Funcs          map[string]kis.Function // 当前flow拥有的全部管理的全部Function对象, key: FunctionName
 	FlowHead       kis.Function            // 当前Flow所拥有的Function列表表头
 	FlowTail       kis.Function            // 当前Flow所拥有的Function列表表尾
 	flock          sync.RWMutex            // 管理链表插入读写的锁
@@ -118,8 +118,8 @@ func (flow *KisFlow) appendFunc(function kis.Function, fParam config.FParam) err
 		flow.FlowTail = function
 	}
 
-	// 将Function ID 详细Hash对应关系添加到flow对象中
-	flow.Funcs[function.GetId()] = function
+	// 将Function Name 详细Hash对应关系添加到flow对象中
+	flow.Funcs[function.GetConfig().FName] = function
 
 	// 先添加function默认携带的Params参数
 	params := make(config.FParam)
@@ -219,5 +219,18 @@ func (flow *KisFlow) GetConnConf() (*config.KisConnConfig, error) {
 		return conn.GetConfig(), nil
 	} else {
 		return nil, errors.New("GetConnConf(): Connector is nil")
+	}
+}
+
+func (flow *KisFlow) GetConfig() *config.KisFlowConfig {
+	return flow.Conf
+}
+
+func (flow *KisFlow) GetFuncConfigByName(funcName string) *config.KisFuncConfig {
+	if f, ok := flow.Funcs[funcName]; ok {
+		return f.GetConfig()
+	} else {
+		log.Logger().ErrorF("GetFuncConfigByName(): Function %s not found", funcName)
+		return nil
 	}
 }
