@@ -2,6 +2,7 @@ package flow
 
 import (
 	"KisFlow/common"
+	"KisFlow/config"
 	"KisFlow/log"
 	"context"
 	"errors"
@@ -168,4 +169,32 @@ func (flow *KisFlow) SetMetaData(key string, value interface{}) {
 	defer flow.mLock.Unlock()
 
 	flow.metaData[key] = value
+}
+
+// GetFuncParam 得到Flow的当前正在执行的Function的配置默认参数，取出一对key-value
+func (flow *KisFlow) GetFuncParam(key string) string {
+	flow.fplock.RLock()
+	defer flow.fplock.RUnlock()
+
+	if param, ok := flow.funcParams[flow.ThisFunctionId]; ok {
+		if value, vok := param[key]; vok {
+			return value
+		}
+	}
+
+	return ""
+
+}
+
+// GetFuncParamAll 得到Flow的当前正在执行的Function的配置默认参数，取出全部Key-Value
+func (flow *KisFlow) GetFuncParamAll() config.FParam {
+	flow.fplock.RLock()
+	defer flow.fplock.RUnlock()
+
+	param, ok := flow.funcParams[flow.ThisFunctionId]
+	if !ok {
+		return nil
+	}
+
+	return param
 }

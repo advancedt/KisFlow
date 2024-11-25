@@ -35,6 +35,7 @@ type Flow interface {
 	GetFuncConfigByName(funcName string) *config.KisFuncConfig
 	// Next 当前Flow执行到的Funtion进入下一层Function锁携带的Action动作
 	Next(acts ...ActionFunc) error
+
 	// 得到当前Flow的缓存数据
 	GetCacheData(key string) interface{}
 	// 设置当前Flow的缓存数据
