@@ -7,6 +7,7 @@ import (
 	"KisFlow/kis"
 	"context"
 	"errors"
+	"sync"
 )
 
 /*
@@ -24,9 +25,52 @@ type BaseFunction struct {
 
 	connector kis.Connector //connector
 
+	// Function的自定义临时数据
+	metaData map[string]interface{}
+	// 管理metaData的读写锁
+	mLock sync.RWMutex
+
 	//link
 	N kis.Function //下一个流计算Function
 	P kis.Function //上一个流计算Function
+}
+
+// NewKisFunction 创建一个NsFunction
+// flow: 当前所属的flow实例
+// s : 当前function的配置策略
+func NewKisFunction(flow kis.Flow, config *config.KisFuncConfig) kis.Function {
+	var f kis.Function
+
+	//工厂生产泛化对象
+	// ++++++++++++++
+	switch common.KisMode(config.FMode) {
+	case common.V:
+		f = NewKisFunctionV() // +++
+	case common.S:
+		f = NewKisFunctionS() // +++
+	case common.L:
+		f = NewKisFunctionL() // +++
+	case common.C:
+		f = NewKisFunctionC() // +++
+	case common.E:
+		f = NewKisFunctionE() // +++
+	default:
+		//LOG ERROR
+		return nil
+	}
+
+	// 生成唯一ID
+	f.CreateId()
+
+	// 设置基础信息属性
+	if err := f.SetConfig(config); err != nil {
+		panic(err)
+	}
+
+	if err := f.SetFlow(flow); err != nil {
+		panic(err)
+	}
+	return f
 }
 
 // Call
@@ -109,44 +153,72 @@ func (base *BaseFunction) AddConnector(conn kis.Connector) error {
 	return nil
 }
 
+func NewKisFunctionC() kis.Function {
+	f := new(KisFunctionC)
+
+	// 初始化metaData
+	f.metaData = make(map[string]interface{})
+
+	return f
+}
+
+func NewKisFunctionV() kis.Function {
+	f := new(KisFunctionV)
+
+	// 初始化metaData
+	f.metaData = make(map[string]interface{})
+
+	return f
+}
+
+func NewKisFunctionE() kis.Function {
+	f := new(KisFunctionE)
+
+	// 初始化metaData
+	f.metaData = make(map[string]interface{})
+
+	return f
+}
+
+func NewKisFunctionS() kis.Function {
+	f := new(KisFunctionS)
+
+	// 初始化metaData
+	f.metaData = make(map[string]interface{})
+
+	return f
+}
+
+func NewKisFunctionL() kis.Function {
+	f := new(KisFunctionL)
+
+	// 初始化metaData
+	f.metaData = make(map[string]interface{})
+
+	return f
+}
+
 func (base *BaseFunction) GetConnector() kis.Connector {
 	return base.connector
 }
 
-// NewKisFunction 创建一个NsFunction
-// flow: 当前所属的flow实例
-// s : 当前function的配置策略
-func NewKisFunction(flow kis.Flow, config *config.KisFuncConfig) kis.Function {
-	var f kis.Function
+// GetMetaData 得到当前Function的临时数据
+func (base *BaseFunction) GetMetaData(key string) interface{} {
+	base.mLock.RLock()
+	defer base.mLock.RUnlock()
 
-	// 工厂生产泛化对象
-	switch common.KisMode(config.FMode) {
-	case common.V:
-		f = new(KisFunctionV)
-		break
-	case common.S:
-		f = new(KisFunctionS)
-	case common.L:
-		f = new(KisFunctionL)
-	case common.C:
-		f = new(KisFunctionC)
-	case common.E:
-		f = new(KisFunctionE)
-	default:
-		//LOG ERROR
+	data, ok := base.metaData[key]
+	if !ok {
 		return nil
 	}
 
-	// 生成唯一ID
-	f.CreateId()
+	return data
+}
 
-	// 设置基础信息属性
-	if err := f.SetConfig(config); err != nil {
-		panic(err)
-	}
+// SetMetaData 设置当前Function的临时数据
+func (base *BaseFunction) SetMetaData(key string, value interface{}) {
+	base.mLock.Lock()
+	defer base.mLock.Unlock()
 
-	if err := f.SetFlow(flow); err != nil {
-		panic(err)
-	}
-	return f
+	base.metaData[key] = value
 }

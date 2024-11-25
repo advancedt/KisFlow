@@ -4,6 +4,7 @@ import (
 	"KisFlow/common"
 	"KisFlow/config"
 	"context"
+	"time"
 )
 
 type Flow interface {
@@ -34,4 +35,16 @@ type Flow interface {
 	GetFuncConfigByName(funcName string) *config.KisFuncConfig
 	// Next 当前Flow执行到的Funtion进入下一层Function锁携带的Action动作
 	Next(acts ...ActionFunc) error
+	// 得到当前Flow的缓存数据
+	GetCacheData(key string) interface{}
+	// 设置当前Flow的缓存数据
+	SetCacheData(key string, value interface{}, Exp time.Duration)
+	//GetMetaData得到当前Flow的临时数据
+	GetMetaData(key string) interface{}
+	//SetMetaData 设置当前Flow的临时数据
+	SetMetaData(key string, value interface{})
+	// GetFuncParam 得到Flow的当前正在执行的Function的配置默认参数，取出一对key-value
+	GetFuncParam(key string) string
+	// GetFuncParamAll 得到Flow的当前正在执行的Function的配置默认参数，取出全部Key-Value
+	GetFuncParamAll() config.FParam
 }

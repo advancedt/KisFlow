@@ -18,6 +18,11 @@ type KisConnector struct {
 
 	//Connector Init
 	onceInit sync.Once
+
+	// KisConnector的自定义临时数据
+	metaData map[string]interface{}
+	// 管理metaData的读写锁
+	mLock sync.RWMutex
 }
 
 // NewKisConnector 根据配置策略新创建一个KisConnector
@@ -26,6 +31,8 @@ func NewKisConnector(config *config.KisConnConfig) *KisConnector {
 	conn.CID = id.KisID()
 	conn.CName = config.CName
 	conn.Conf = config
+
+	conn.metaData = make(map[string]interface{})
 
 	return conn
 }
@@ -61,4 +68,25 @@ func (conn *KisConnector) GetName() string {
 
 func (conn *KisConnector) GetConfig() *config.KisConnConfig {
 	return conn.Conf
+}
+
+// GetMetaData 得到当前Connector的临时数据
+func (conn *KisConnector) GetMetaData(key string) interface{} {
+	conn.mLock.RLock()
+	defer conn.mLock.RUnlock()
+
+	data, ok := conn.metaData[key]
+	if !ok {
+		return nil
+	}
+
+	return data
+}
+
+// SetMetaData 设置当前Connector的临时数据
+func (conn *KisConnector) SetMetaData(key string, value interface{}) {
+	conn.mLock.Lock()
+	defer conn.mLock.Unlock()
+
+	conn.metaData[key] = value
 }

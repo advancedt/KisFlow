@@ -6,17 +6,12 @@ import (
 	"fmt"
 )
 
-func FuncDemo3Handler(ctx context.Context, flow kis.Flow) error {
-
-	fmt.Println("---> Call funcName3Handler ----")
-
-	// ++++
-	fmt.Printf("Params = %+v\n", flow.GetFuncParamAll())
+func NoResultFuncHandler(ctx context.Context, flow kis.Flow) error {
+	fmt.Println("---> Call NoResultFuncHandler ----")
 
 	for _, row := range flow.Input() {
 		str := fmt.Sprintf("In FuncName = %s, FuncId = %s, row = %s", flow.GetThisFuncConf().FName, flow.GetThisFunction().GetId(), row)
 		fmt.Println(str)
 	}
-
-	return nil
+	return flow.Next()
 }

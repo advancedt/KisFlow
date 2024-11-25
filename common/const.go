@@ -1,5 +1,7 @@
 package common
 
+import "time"
+
 type KisMode string
 
 // KisIdType 用户生成KisId的字符串前缀
@@ -55,4 +57,12 @@ const (
 	KAFKA KisConnType = "kafka"
 	TIDB  KisConnType = "tidb"
 	ES    KisConnType = "es"
+)
+
+// cache
+const (
+	// DeFaultFlowCacheCleanUp KisFlow中Flow对象Cache缓存默认的清理内存时间
+	DeFaultFlowCacheCleanUp = 5 //单位 min
+	// DefaultExpiration 默认GoCahce时间 ，永久保存
+	DefaultExpiration time.Duration = 0
 )

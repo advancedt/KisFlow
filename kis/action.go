@@ -7,6 +7,12 @@ type Action struct {
 	DataReuse bool
 	// Abort中指Flow执行
 	Abort bool
+	// 默认Next()为如果本层Function计算结果为0条数据，之后Function将不会继续执行
+	// ForceEntryNext 为忽略上述默认规则，没有数据强制进入下一层Function
+	ForceEntryNext bool
+
+	// JumpFunc 跳转到指定Function继续执行
+	JumpFunc string
 }
 
 // ActionFunc kisFlow Functional Option 类型
@@ -33,4 +39,17 @@ func ActionAbort(action *Action) {
 // ActionDataReuse Next复用上层Function数据Option
 func ActionDataReuse(act *Action) {
 	act.DataReuse = true
+}
+
+// ActionForceEntryNext 强制进入下一层
+func ActionForceEntryNext(act *Action) {
+	act.ForceEntryNext = true
+}
+
+// ActionJumpFunc 会返回一个ActionFunc函数，并且会将funcName赋值给Action.JumpFunc
+// (注意：容易出现Flow循环调用，导致死循环)
+func ActionJumpFunc(funcName string) ActionFunc {
+	return func(act *Action) {
+		act.JumpFunc = funcName
+	}
 }

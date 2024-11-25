@@ -10,7 +10,9 @@ import (
 	"KisFlow/log"
 	"context"
 	"errors"
+	"github.com/patrickmn/go-cache"
 	"sync"
+	"time"
 )
 
 type KisFlow struct {
@@ -38,6 +40,11 @@ type KisFlow struct {
 
 	action kis.Action // 当前Flow所携带的Action动作
 	abort  bool       // 是否中断Flow
+
+	cache *cache.Cache //Flow流的临时缓存上下文环境
+
+	metaData map[string]interface{} // Flow自订的临时数据
+	mLock    sync.RWMutex           //管理metaData的读写锁
 }
 
 // TODO for test
@@ -55,6 +62,10 @@ func NewKisFlow(conf *config.KisFlowConfig) *KisFlow {
 	flow.funcParams = make(map[string]config.FParam)
 
 	flow.data = make(common.KisDataMap)
+
+	flow.cache = cache.New(cache.NoExpiration, common.DeFaultFlowCacheCleanUp*time.Minute)
+
+	flow.metaData = make(map[string]interface{})
 
 	return flow
 }
@@ -247,4 +258,32 @@ func (flow *KisFlow) Next(acts ...kis.ActionFunc) error {
 	flow.action = kis.LoadActions(acts)
 
 	return nil
+}
+
+// GetFuncParam 得到Flow的当前正在执行的Function的配置默认参数，取出一对key-value
+func (flow *KisFlow) GetFuncParam(key string) string {
+	flow.fplock.RLock()
+	defer flow.fplock.RUnlock()
+
+	if param, ok := flow.funcParams[flow.ThisFunctionId]; ok {
+		if value, vok := param[key]; vok {
+			return value
+		}
+	}
+
+	return ""
+
+}
+
+// GetFuncParamAll 得到Flow的当前正在执行的Function的配置默认参数，取出全部Key-Value
+func (flow *KisFlow) GetFuncParamAll() config.FParam {
+	flow.fplock.RLock()
+	defer flow.fplock.RUnlock()
+
+	param, ok := flow.funcParams[flow.ThisFunctionId]
+	if !ok {
+		return nil
+	}
+
+	return param
 }

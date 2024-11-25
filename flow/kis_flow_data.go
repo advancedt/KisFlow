@@ -6,6 +6,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/patrickmn/go-cache"
+	"time"
 )
 
 func (flow *KisFlow) CommitRow(row interface{}) error {
@@ -115,4 +117,55 @@ func (flow *KisFlow) commitReuseData(ctx context.Context) error {
 	log.Logger().DebugFX(ctx, " ====> After commitReuseData, flow_name = %s, flow_id = %s\nAll Level Data =\n %+v\n", flow.Name, flow.Id, flow.data)
 
 	return nil
+}
+
+func (flow *KisFlow) commitVoidData(ctx context.Context) error {
+
+	if len(flow.buffer) != 0 {
+		return nil
+	}
+
+	// 制作空数据
+	batch := make(common.KisRowArr, 0)
+
+	// 将本层计算的缓冲数据提交到本层结果数据中
+	flow.data[flow.ThisFunctionId] = batch
+
+	log.Logger().DebugFX(ctx, " ====> After commitVoidData, flow_name = %s, flow_id = %s\nAll Level Data =\n %+v\n", flow.Name, flow.Id, flow.data)
+
+	return nil
+}
+
+func (flow *KisFlow) GetCacheData(key string) interface{} {
+	if data, found := flow.cache.Get(key); found {
+		return data
+	}
+	return nil
+}
+
+func (flow *KisFlow) SetCacheData(key string, value interface{}, Exp time.Duration) {
+	if Exp == common.DefaultExpiration {
+		flow.cache.Set(key, value, cache.DefaultExpiration)
+	} else {
+		flow.cache.Set(key, value, Exp)
+	}
+}
+
+// GetMetaData 得到当前Flow对象的临时数据
+func (flow *KisFlow) GetMetaData(key string) interface{} {
+	flow.mLock.RLock()
+	defer flow.mLock.RUnlock()
+
+	data, ok := flow.metaData[key]
+	if !ok {
+		return nil
+	}
+	return data
+}
+
+func (flow *KisFlow) SetMetaData(key string, value interface{}) {
+	flow.mLock.Lock()
+	defer flow.mLock.Unlock()
+
+	flow.metaData[key] = value
 }
