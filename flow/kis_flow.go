@@ -35,6 +35,9 @@ type KisFlow struct {
 	buffer common.KisRowArr  // 用来临时存放输入字节数据的内部Buf, 一条数据为interface{}, 多条数据为[]interface{} 也就是KisBatch
 	data   common.KisDataMap // 流式计算各个层级的数据源
 	inPut  common.KisRowArr  // 当前Function的计算输入数据
+
+	action kis.Action // 当前Flow所携带的Action动作
+	abort  bool       // 是否中断Flow
 }
 
 // TODO for test
@@ -138,8 +141,12 @@ func (flow *KisFlow) appendFunc(function kis.Function, fParam config.FParam) err
 
 // Run 启动KisFlow的流式计算, 从起始Function开始执行流
 func (flow *KisFlow) Run(ctx context.Context) error {
+
 	var fn kis.Function
+
 	fn = flow.FlowHead
+	// 重置abort
+	flow.abort = false // 每次进入调度，要重置abort状态
 
 	if flow.Conf.Status == int(common.FlowDisable) {
 		// flow被配置关闭
@@ -155,7 +162,8 @@ func (flow *KisFlow) Run(ctx context.Context) error {
 	}
 
 	// 流式链式调用
-	for fn != nil {
+	// 如果设置abort则不进入下次循环调度
+	for fn != nil && flow.abort == false {
 		// flow 当前执行到的Function标记
 		fid := fn.GetId()
 		flow.ThisFunction = fn
@@ -174,13 +182,10 @@ func (flow *KisFlow) Run(ctx context.Context) error {
 			return err
 		} else {
 			// Success
-			if err := flow.commitCurData(ctx); err != nil {
-				return nil
+			fn, err = flow.dealAction(ctx, fn)
+			if err != nil {
+				return err
 			}
-			// 更新上一层FunctionId游标
-			flow.PrevFunctionId = flow.ThisFunctionId
-
-			fn = fn.Next()
 		}
 
 	}
@@ -233,4 +238,13 @@ func (flow *KisFlow) GetFuncConfigByName(funcName string) *config.KisFuncConfig 
 		log.Logger().ErrorF("GetFuncConfigByName(): Function %s not found", funcName)
 		return nil
 	}
+}
+
+// Next 当前Flow执行到的Function进入下一层Function所携带的Action动作
+func (flow *KisFlow) Next(acts ...kis.ActionFunc) error {
+
+	// 加载Function FaaS传递的Action动作
+	flow.action = kis.LoadActions(acts)
+
+	return nil
 }

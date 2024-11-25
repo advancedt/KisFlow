@@ -32,4 +32,6 @@ type Flow interface {
 	GetConfig() *config.KisFlowConfig
 	// GetFuncConfigByName 得到当前Flow的配置
 	GetFuncConfigByName(funcName string) *config.KisFuncConfig
+	// Next 当前Flow执行到的Funtion进入下一层Function锁携带的Action动作
+	Next(acts ...ActionFunc) error
 }
